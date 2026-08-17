@@ -1,0 +1,22 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=LotteryAnalyticsDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True"
+  },
+  "Sambad": {
+    "BaseUrl": "",
+    "Token": ""
+  },
+  "Jwt": {
+    "Secret": "REPLACE_WITH_A_LONG_RANDOM_SECRET_MIN_32_CHARS"
+  },
+  "AdminBootstrap": {
+    "Username": "admin",
+    "Password": "REPLACE_WITH_A_STRONG_PASSWORD"
+  }
+}

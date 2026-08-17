@@ -1,0 +1,26 @@
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# .NET
+bin/
+obj/
+*.user
+
+# Env
+.env
+.env.local
+.env.production
+appsettings.Production.json
+backend/appsettings.Development.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vs/
+.vscode/*
+!.vscode/extensions.json
