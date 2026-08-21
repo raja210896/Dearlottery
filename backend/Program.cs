@@ -10,12 +10,22 @@ using LotteryAnalytics.Api.Services.Predictions;
 using LotteryAnalytics.Api.Services.Results;
 using LotteryAnalytics.Api.Services.Sambad;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Polly;
 using Polly.Extensions.Http;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Hosting platforms like Render assign a port at runtime via the PORT env var and expect the
+// app to bind to 0.0.0.0:$PORT. Local dev is untouched — launchSettings.json / ASPNETCORE_URLS
+// still control the port when PORT isn't set (which it normally isn't on a dev machine).
+var renderPort = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrWhiteSpace(renderPort))
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{renderPort}");
+}
 
 // Config binding falls back to env vars (ConnectionStrings__DefaultConnection, Sambad__Token, etc.)
 builder.Services.AddControllers();
@@ -104,19 +114,41 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 
-var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+// Allowed origins come from the Cors:AllowedOrigins config array (Cors__AllowedOrigins__0=... as env
+// vars) plus an optional single FRONTEND_URL env var, for the deployed Vercel domain. The
+// appsettings.json base default (localhost, for local dev) is dropped outside Development so a
+// missing FRONTEND_URL/Cors__AllowedOrigins__0 on the host can't silently fall back to localhost.
+var configuredOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+var allowedOrigins = builder.Environment.IsDevelopment()
+    ? configuredOrigins.ToList()
+    : configuredOrigins.Where(o => !o.Contains("localhost", StringComparison.OrdinalIgnoreCase)).ToList();
+var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL");
+if (!string.IsNullOrWhiteSpace(frontendUrl))
+{
+    var trimmed = frontendUrl.TrimEnd('/');
+    if (!allowedOrigins.Contains(trimmed)) allowedOrigins.Add(trimmed);
+}
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
     {
-        policy.WithOrigins(allowedOrigins)
+        policy.WithOrigins(allowedOrigins.ToArray())
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
 });
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // Render sits in front of the app on a private network; there's no fixed proxy IP to pin here.
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
 
+app.UseForwardedHeaders();
 app.UseMiddleware<ExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())
@@ -131,7 +163,23 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }));
+
+// Liveness + DB connectivity check. Returns 200 only when the API and the database are both
+// reachable; never returns connection strings, server names, or exception details.
+app.MapGet("/api/health", async (AppDbContext db) =>
+{
+    try
+    {
+        var canConnect = await db.Database.CanConnectAsync();
+        return canConnect
+            ? Results.Ok(new { status = "ok" })
+            : Results.Json(new { status = "unhealthy" }, statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+    catch
+    {
+        return Results.Json(new { status = "unhealthy" }, statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+});
 
 await SeedAdminUserAsync(app);
 

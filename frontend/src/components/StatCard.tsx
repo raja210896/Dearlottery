@@ -13,15 +13,30 @@ export default function StatCard({
   to?: string;
 }) {
   const content = (
-    <div className="card" style={{ display: "flex", flexDirection: "column", gap: 8, height: "100%" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text-muted)", fontSize: 12, fontWeight: 600 }}>
-        {icon}
+    <div className="card" style={{ display: "flex", flexDirection: "column", gap: 10, height: "100%", transition: "box-shadow 0.15s ease, transform 0.1s ease" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-muted)", fontSize: 12, fontWeight: 700 }}>
+        {icon && (
+          <span style={{
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            width: 26, height: 26, borderRadius: 8, background: "var(--primary-tint)", color: "var(--primary)", flexShrink: 0,
+          }}>
+            {icon}
+          </span>
+        )}
         <span>{title}</span>
       </div>
       <div>{children}</div>
     </div>
   );
-  return to ? <Link to={to} style={{ textDecoration: "none", color: "inherit" }}>{content}</Link> : content;
+  return to ? (
+    <Link
+      to={to}
+      className="stat-card-link"
+      style={{ textDecoration: "none", color: "inherit", display: "block", height: "100%" }}
+    >
+      {content}
+    </Link>
+  ) : content;
 }
 
 export function ChipRow({ values }: { values: string[] }) {

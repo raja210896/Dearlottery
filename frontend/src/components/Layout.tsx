@@ -13,7 +13,10 @@ export default function Layout() {
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
       <aside className="sidebar">
-        <div className="sidebar-brand">LotteryAnalytics</div>
+        <div className="sidebar-brand">
+          <span className="brand-mark"><AnalysisIcon size={15} /></span>
+          <span>LotteryAnalytics</span>
+        </div>
         <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
             <NavLink key={to} to={to} end={end} className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}>
@@ -26,7 +29,10 @@ export default function Layout() {
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <header className="app-header">
-          <span className="app-header-title">LotteryAnalytics</span>
+          <span className="app-header-title">
+            <span className="brand-mark"><AnalysisIcon size={14} /></span>
+            <span>LotteryAnalytics</span>
+          </span>
         </header>
 
         <main>

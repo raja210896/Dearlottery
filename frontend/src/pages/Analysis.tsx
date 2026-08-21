@@ -48,14 +48,7 @@ export default function Analysis() {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className="btn"
-            style={{
-              background: tab === t.key ? "var(--primary)" : "var(--surface)",
-              color: tab === t.key ? "var(--primary-text)" : "var(--text)",
-              border: "1px solid var(--border)",
-              whiteSpace: "nowrap",
-              flexShrink: 0,
-            }}
+            className={`pill-btn${tab === t.key ? " active" : ""}`}
           >
             {t.label}
           </button>
@@ -409,12 +402,7 @@ function BacktestTab({ drawTime }: { drawTime: string }) {
         {BACKTEST_PRESETS.map((n) => (
           <button
             key={n}
-            className="btn"
-            style={{
-              background: !useCustomRange && drawCount === n ? "var(--primary)" : "var(--surface)",
-              color: !useCustomRange && drawCount === n ? "var(--primary-text)" : "var(--text)",
-              border: "1px solid var(--border)",
-            }}
+            className={`pill-btn${!useCustomRange && drawCount === n ? " active" : ""}`}
             onClick={() => { setDrawCount(n); setFrom(""); setTo(""); }}
           >
             {n} draws

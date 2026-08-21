@@ -39,3 +39,6 @@ export const ChevronRightIcon = ({ size }: IconProps) => (
 export const RefreshIcon = ({ size }: IconProps) => (
   <svg {...base(size)}><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6" /></svg>
 );
+export const CalendarIcon = ({ size }: IconProps) => (
+  <svg {...base(size)}><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M3 9h18M8 2v4M16 2v4" /></svg>
+);

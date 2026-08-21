@@ -7,7 +7,7 @@ import type { PredictionHistoryDto } from "../api/types";
 import ResultCard from "../components/ResultCard";
 import StatCard, { ChipRow } from "../components/StatCard";
 import { LoadingSkeleton, ErrorState, EmptyState } from "../components/StateViews";
-import { FlameIcon, SnowflakeIcon, AnalysisIcon, HistoryIcon } from "../components/icons";
+import { FlameIcon, SnowflakeIcon, AnalysisIcon, HistoryIcon, CalendarIcon } from "../components/icons";
 import { Link } from "react-router-dom";
 
 export default function Home() {
@@ -24,16 +24,39 @@ export default function Home() {
     }
   }
 
+  // Derive the "Updated" timestamp from real data — the most recent lastUpdated among today's draws.
+  const latestUpdatedIso = (today.data ?? [])
+    .map((r) => r.lastUpdated)
+    .filter((v): v is string => !!v)
+    .sort()
+    .pop();
+  const updatedLabel = latestUpdatedIso
+    ? new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(latestUpdatedIso))
+    : "—";
+
   return (
     <div className="container">
       <h2 className="section-title" style={{ marginTop: 4 }}>Latest Available Results</h2>
       {today.loading && <LoadingSkeleton rows={3} height={120} />}
       {today.error && <ErrorState message={today.error} onRetry={today.reload} />}
       {today.data && (
-        <div className="grid-3">
-          {today.data.map((r) => (
-            <ResultCard key={r.drawTime} result={r} lastAvailable={latestByDrawTime.get(r.drawTime)} />
-          ))}
+        <div
+          style={{
+            background: "var(--gradient-accent)",
+            borderRadius: 20,
+            padding: 14,
+            boxShadow: "0 6px 18px rgba(249,115,22,0.25)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#fff", fontSize: 13, fontWeight: 600, marginBottom: 10, padding: "0 2px" }}>
+            <CalendarIcon size={16} />
+            <span>Updated: {updatedLabel}</span>
+          </div>
+          <div className="grid-3" style={{ overflowX: "auto" }}>
+            {today.data.map((r) => (
+              <ResultCard key={r.drawTime} result={r} lastAvailable={latestByDrawTime.get(r.drawTime)} />
+            ))}
+          </div>
         </div>
       )}
 

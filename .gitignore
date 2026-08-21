@@ -16,6 +16,11 @@ obj/
 appsettings.Production.json
 backend/appsettings.Development.json
 
+# Runtime logs (local dev only, never needed in the repo)
+backend/run-stdout.log
+backend/run-stderr.log
+*.log
+
 # OS
 .DS_Store
 Thumbs.db
