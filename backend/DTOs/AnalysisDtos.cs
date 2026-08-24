@@ -63,6 +63,26 @@ public class RecentVsHistoricalEntry
     public int RecentCount { get; set; }
 }
 
+public class SeasonalDrawPrediction
+{
+    public string DrawTime { get; set; } = string.Empty;
+    /// <summary>The exact date being compared against (target date minus 1 year).</summary>
+    public DateOnly SameDateLastYear { get; set; }
+    /// <summary>Null when no result exists for that date+draw — never guessed/fabricated.</summary>
+    public string? SameDateLastYearValue { get; set; }
+    /// <summary>Numbers ranked by how often they occurred in this calendar month, across all years on record.</summary>
+    public List<FrequencyEntry> CurrentMonthFrequency { get; set; } = new();
+    public int CurrentMonthSampleSize { get; set; }
+}
+
+public class SeasonalPattern
+{
+    public DateOnly TargetDate { get; set; }
+    public List<SeasonalDrawPrediction> Draws { get; set; } = new();
+    public string Disclaimer { get; set; } =
+        "Statistical pattern only — same-date-last-year and current-month frequency, not a prediction of future outcomes.";
+}
+
 public class DigitAnalysis
 {
     /// <summary>Frequency of each digit 0-9 across all positions of all numbers.</summary>

@@ -2,6 +2,7 @@ import { api, qs } from "./client";
 import type {
   AnalysisOverview, BacktestResponse, CandidateResponse, DataQualitySummary, DigitAnalysis,
   FrequencySnapshot, ModelComparisonResponse, MultiDigitBacktestSummary, PatternStats, RecencyEntry,
+  SeasonalPattern,
 } from "./types";
 
 export const analysisApi = {
@@ -23,4 +24,6 @@ export const analysisApi = {
     api.get<DigitAnalysis>(`/analysis/digits${qs(params)}`),
   modelComparison: (params: { drawCount?: number; candidateCount?: number; from?: string; to?: string }) =>
     api.get<ModelComparisonResponse>(`/analysis/model-comparison${qs(params)}`),
+  seasonal: (params: { date?: string; digitLength?: number; topN?: number } = {}) =>
+    api.get<SeasonalPattern>(`/analysis/seasonal${qs(params)}`),
 };

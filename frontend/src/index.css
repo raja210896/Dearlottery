@@ -9,10 +9,10 @@
   --primary-dark: #4338ca;
   --primary-tint: #eef0fe;
   --primary-text: #ffffff;
-  --accent: #f97316;
-  --accent-tint: #fff2e5;
-  --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-  --gradient-accent: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
+  --accent: #7c3aed;
+  --accent-tint: #f2eefd;
+  --gradient-primary: linear-gradient(135deg, #4338ca 0%, #6366f1 100%);
+  --gradient-accent: linear-gradient(135deg, #3730a3 0%, #7c3aed 100%);
   --success: #16a34a;
   --success-bg: #dcfce7;
   --warning: #d97706;
@@ -26,6 +26,12 @@
   --shadow-lg: 0 10px 30px rgba(15, 23, 42, 0.10);
   --nav-height: 60px;
   --header-height: 56px;
+  /* Dashboard chrome (sidebar + mobile header) — deep navy, independent of light/dark content theme. */
+  --navy: #0b1224;
+  --navy-2: #141c33;
+  --navy-border: rgba(255, 255, 255, 0.08);
+  --navy-text: #cbd5e1;
+  --navy-text-muted: #8b96ad;
   color-scheme: light;
 }
 
@@ -40,7 +46,7 @@
     --primary: #6366f1;
     --primary-dark: #818cf8;
     --primary-tint: #1a1f3a;
-    --accent-tint: #2a1c0f;
+    --accent-tint: #241b3d;
     --success-bg: #12301f;
     --warning-bg: #362409;
     --danger-bg: #341012;
@@ -115,12 +121,19 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   gap: 12px;
 }
 
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
 @media (max-width: 480px) {
   .grid-3 { grid-template-columns: 1fr 1fr; }
+  .grid-4 { grid-template-columns: 1fr 1fr; }
 }
 
 @media (min-width: 900px) {
-  .grid-2, .grid-3 { gap: 14px; }
+  .grid-2, .grid-3, .grid-4 { gap: 14px; }
 }
 
 .badge {
@@ -137,6 +150,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .badge-success { background: var(--success-bg); color: var(--success); }
 .badge-warning { background: var(--warning-bg); color: var(--warning); }
 .badge-muted { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border); }
+
+.status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.status-dot.success { background: var(--success); }
+.status-dot.warning { background: var(--warning); }
 
 .btn {
   display: inline-flex;
@@ -230,13 +247,13 @@ tbody tr:hover { background: var(--surface-2); }
   display: flex;
   align-items: center;
   padding: 0 16px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  border-bottom: 1px solid var(--navy-border);
+  background: var(--navy);
   position: sticky;
   top: 0;
   z-index: 10;
 }
-.app-header-title { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.app-header-title { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px; color: #fff; }
 
 .brand-mark {
   width: 26px;
@@ -288,28 +305,28 @@ tbody tr:hover { background: var(--surface-2); }
     flex-direction: column;
     width: 232px;
     flex-shrink: 0;
-    border-right: 1px solid var(--border);
-    background: var(--surface);
+    border-right: 1px solid var(--navy-border);
+    background: var(--navy);
     padding: 18px 12px;
     position: sticky;
     top: 0;
     height: 100vh;
   }
-  .sidebar-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; padding: 8px 10px 22px; }
+  .sidebar-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; padding: 8px 10px 22px; color: #fff; }
   .sidebar-link {
     display: flex;
     align-items: center;
     gap: 10px;
     padding: 10px 12px;
     border-radius: var(--radius-sm);
-    color: var(--text-muted);
+    color: var(--navy-text-muted);
     text-decoration: none;
     font-size: 14px;
     font-weight: 600;
     transition: background 0.15s ease, color 0.15s ease;
   }
-  .sidebar-link:hover { background: var(--surface-2); color: var(--text); }
-  .sidebar-link.active { background: var(--primary-tint); color: var(--primary); }
+  .sidebar-link:hover { background: var(--navy-2); color: var(--navy-text); }
+  .sidebar-link.active { background: rgba(99, 102, 241, 0.18); color: #a5b4fc; }
 }
 
 input, select {

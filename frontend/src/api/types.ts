@@ -221,6 +221,20 @@ export interface RecentPredictionOutcome {
   matchFound: boolean;
 }
 
+export interface SeasonalDrawPrediction {
+  drawTime: string;
+  sameDateLastYear: string;
+  sameDateLastYearValue: string | null;
+  currentMonthFrequency: FrequencyEntry[];
+  currentMonthSampleSize: number;
+}
+
+export interface SeasonalPattern {
+  targetDate: string;
+  draws: SeasonalDrawPrediction[];
+  disclaimer: string;
+}
+
 export interface PredictionPerformanceDto {
   totalPredictions: number;
   evaluatedPredictions: number;

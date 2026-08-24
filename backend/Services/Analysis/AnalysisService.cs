@@ -223,6 +223,43 @@ public class AnalysisService : IAnalysisService
         return analysis;
     }
 
+    private static readonly string[] AllDrawTimes = { "1 PM", "6 PM", "8 PM" };
+
+    /// <summary>
+    /// Read-only, additive analysis — never touches the Multi-Factor candidate scoring model or
+    /// saved prediction records. For each draw time: the exact result from this date one year ago
+    /// (null, never guessed, if no such record exists) and a frequency ranking of results from this
+    /// calendar month across every year on record.
+    /// </summary>
+    public async Task<SeasonalPattern> GetSeasonalPatternAsync(DateOnly targetDate, int digitLength, int topN, CancellationToken ct = default)
+    {
+        var lastYearDate = targetDate.AddYears(-1);
+        var pattern = new SeasonalPattern { TargetDate = targetDate };
+
+        foreach (var drawTime in AllDrawTimes)
+        {
+            var results = await QueryResults(drawTime, null, null).ToListAsync(ct);
+
+            var sameDateLastYear = results.FirstOrDefault(r => r.DrawDate == lastYearDate);
+            var monthResults = results.Where(r => r.DrawDate.Month == targetDate.Month).ToList();
+            var monthFrequency = CountBy(monthResults, r => LastDigits(r.ResultValue, digitLength))
+                .OrderByDescending(e => e.Count)
+                .Take(Math.Max(1, topN))
+                .ToList();
+
+            pattern.Draws.Add(new SeasonalDrawPrediction
+            {
+                DrawTime = drawTime,
+                SameDateLastYear = lastYearDate,
+                SameDateLastYearValue = sameDateLastYear?.ResultValue,
+                CurrentMonthFrequency = monthFrequency,
+                CurrentMonthSampleSize = monthResults.Count
+            });
+        }
+
+        return pattern;
+    }
+
     private IQueryable<LotteryResult> QueryResults(string? drawTime, DateOnly? from, DateOnly? to)
     {
         var query = _db.LotteryResults.AsNoTracking().AsQueryable();

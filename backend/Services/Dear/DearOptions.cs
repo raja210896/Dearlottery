@@ -6,6 +6,10 @@ public class DearOptions
 
     public bool Enabled { get; set; }
     public string BaseUrl { get; set; } = "https://www.7dear.in";
+    /// <summary>Archive index source for <see cref="DearArchiveCollectorService"/> — a distinct
+    /// site from <see cref="BaseUrl"/> (7dear.in); its own dated result pages are the source of
+    /// truth for which date+draw links actually exist.</summary>
+    public string ArchiveBaseUrl { get; set; } = "https://dearlottery.in";
     public DateOnly HistoricalStartDate { get; set; } = new(2025, 1, 1);
     public DateOnly HistoricalEndDate { get; set; } = new(2026, 8, 16);
     public bool DailyCheckEnabled { get; set; }

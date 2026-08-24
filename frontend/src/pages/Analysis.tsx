@@ -36,11 +36,11 @@ export default function Analysis() {
     <div className="container">
       <h1 className="section-title" style={{ marginTop: 4 }}>Analysis</h1>
 
-      <div className="card" style={{ marginBottom: 12 }}>
-        <select value={drawTime} onChange={(e) => setDrawTime(e.target.value)}>
-          <option value="">All draws</option>
-          {DRAW_TIMES.map((d) => <option key={d} value={d}>{d}</option>)}
-        </select>
+      <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
+        <button className={`pill-btn${drawTime === "" ? " active" : ""}`} onClick={() => setDrawTime("")}>All</button>
+        {DRAW_TIMES.map((d) => (
+          <button key={d} className={`pill-btn${drawTime === d ? " active" : ""}`} onClick={() => setDrawTime(d)}>{d}</button>
+        ))}
       </div>
 
       <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 8, marginBottom: 8 }}>
@@ -268,7 +268,7 @@ function CandidatesTab({ drawTime }: { drawTime: string }) {
                 <span style={{ fontSize: 13, color: "var(--text-muted)" }}>Model Score <b style={{ color: "var(--text)" }}>{c.modelScore}</b></span>
               </div>
               <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-                Historical Frequency <b style={{ color: "var(--text)" }}>{c.historicalFrequency}</b> · Recent Frequency <b style={{ color: "var(--text)" }}>{c.recentFrequency}</b>
+                Historical Frequency <b style={{ color: "var(--text)" }}>{c.historicalFrequency}</b> · Recent Frequency <b style={{ color: "var(--text)" }}>{c.recentFrequency}</b> · Pattern Score <b style={{ color: "var(--text)" }}>{c.breakdown.patternScore}</b>
               </div>
               <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{c.reason}</div>
             </div>
@@ -288,6 +288,9 @@ function CandidatesTab({ drawTime }: { drawTime: string }) {
         {saveStatus && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{saveStatus}</span>}
         <Link to="/analysis/history" style={{ fontSize: 12, color: "var(--primary)", fontWeight: 600 }}>View Prediction History →</Link>
       </div>
+      <p style={{ fontSize: 10, color: "var(--text-muted)", margin: 0, lineHeight: 1.4 }}>
+        Historical Pattern Score is based on historical statistical patterns and does not guarantee future results.
+      </p>
     </div>
   );
 }
