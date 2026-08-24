@@ -59,6 +59,18 @@ builder.Services.AddHttpClient<DearLotteryCollectorService>(client =>
         .WaitAndRetryAsync(3, attempt => TimeSpan.FromSeconds(Math.Pow(2, attempt))));
 builder.Services.AddScoped<IDearBackfillService, DearBackfillService>();
 
+// Separate site (dearlottery.in) from the 7dear.in PDF collector above — its archive page is
+// the source of truth for which date+draw links exist.
+builder.Services.AddHttpClient<DearArchiveCollectorService>(client =>
+    {
+        client.BaseAddress = new Uri(dearOpts.ArchiveBaseUrl);
+        client.Timeout = TimeSpan.FromSeconds(dearOpts.TimeoutSeconds > 0 ? dearOpts.TimeoutSeconds : 20);
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("LotteryAnalytics-DearArchiveCollector/1.0 (+historical result import)");
+    })
+    .AddPolicyHandler(HttpPolicyExtensions
+        .HandleTransientHttpError()
+        .WaitAndRetryAsync(3, attempt => TimeSpan.FromSeconds(Math.Pow(2, attempt))));
+
 // Result provider priority: Sambad (if configured) > 7Dear (if enabled) > Manual admin entry (default).
 // No external calls are made unless a provider is explicitly configured/enabled.
 var sambadOpts = builder.Configuration.GetSection(SambadOptions.SectionName).Get<SambadOptions>() ?? new SambadOptions();
@@ -78,6 +90,7 @@ else
 builder.Services.AddScoped<IPredictionService, PredictionService>();
 builder.Services.AddScoped<IManualResultService, ManualResultService>();
 builder.Services.AddScoped<IHistoricalImportService, HistoricalImportService>();
+builder.Services.AddHostedService<DearDrawScheduleService>();
 
 builder.Services.Configure<WebPushOptions>(builder.Configuration.GetSection(WebPushOptions.SectionName));
 builder.Services.AddScoped<INotificationService, WebPushNotificationService>();
@@ -86,6 +99,7 @@ builder.Services.AddHostedService<DailyReminderBackgroundService>();
 
 builder.Services.AddScoped<ISyncService, SyncService>();
 builder.Services.AddHostedService<SyncBackgroundService>();
+builder.Services.AddHostedService<SambadDrawScheduleService>();
 builder.Services.AddScoped<IAnalysisService, AnalysisService>();
 builder.Services.Configure<ScoringWeights>(builder.Configuration.GetSection(ScoringWeights.SectionName));
 builder.Services.AddScoped<ICandidateScoringService, CandidateScoringService>();

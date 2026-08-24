@@ -1,0 +1,13 @@
+﻿{
+    "success":  true,
+    "message":  "7Dear backfill complete.",
+    "data":  {
+                 "datesProcessed":  598,
+                 "recordsImported":  0,
+                 "missingOrUnavailable":  1185,
+                 "existingDrawsSkipped":  609,
+                 "errors":  [
+
+                            ]
+             }
+}

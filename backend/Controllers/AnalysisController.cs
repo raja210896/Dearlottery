@@ -86,6 +86,17 @@ public class AnalysisController : ControllerBase
         CancellationToken ct = default) =>
         Ok(ApiResponse<object>.Ok(await _analysis.GetDigitAnalysisAsync(drawTime, from, to, recentWindow, ct)));
 
+    // GET /api/analysis/seasonal?date=&digitLength=2&topN=6
+    // Read-only: same-date-last-year + current-month frequency. Does not use or affect the
+    // Multi-Factor candidate scoring model or saved PredictionRecords.
+    [HttpGet("seasonal")]
+    public async Task<IActionResult> Seasonal(
+        [FromQuery] DateOnly? date,
+        [FromQuery] int digitLength = 2,
+        [FromQuery] int topN = 6,
+        CancellationToken ct = default) =>
+        Ok(ApiResponse<object>.Ok(await _analysis.GetSeasonalPatternAsync(date ?? DateOnly.FromDateTime(DateTime.UtcNow), digitLength, topN, ct)));
+
     // GET /api/analysis/model-comparison?drawCount=20&candidateCount=10&from=&to=
     [HttpGet("model-comparison")]
     public async Task<IActionResult> ModelComparison(

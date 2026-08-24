@@ -3,9 +3,11 @@ import type { ResultDto } from "../api/types";
 import { ChevronRightIcon } from "./icons";
 
 export default function ResultCard({
-  result, lastAvailable,
-}: { result: ResultDto; lastAvailable?: { value: string; date: string } | null }) {
+  result, lastAvailable, active = false,
+}: { result: ResultDto; lastAvailable?: { value: string; date: string } | null; active?: boolean }) {
   const published = result.status === "Published";
+  const value = published ? result.resultValue : null;
+
   return (
     <div
       style={{
@@ -15,12 +17,38 @@ export default function ResultCard({
         background: "var(--surface)",
         borderRadius: "var(--radius)",
         padding: "14px 14px 12px",
-        boxShadow: "var(--shadow-sm)",
+        boxShadow: active ? "0 0 0 2px var(--primary), var(--shadow-md)" : "var(--shadow-sm)",
+        position: "relative",
       }}
     >
-      <div style={{ fontSize: 20, fontWeight: 800 }}>{result.drawTime}</div>
+      {active && (
+        <span
+          style={{
+            position: "absolute",
+            top: -9,
+            left: 12,
+            background: "var(--primary)",
+            color: "#fff",
+            fontSize: 9,
+            fontWeight: 700,
+            letterSpacing: 0.5,
+            padding: "2px 8px",
+            borderRadius: 999,
+            textTransform: "uppercase",
+          }}
+        >
+          Active
+        </span>
+      )}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 20, fontWeight: 800 }}>{result.drawTime}</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>
+          <span className={`status-dot ${published ? "success" : "warning"}`} />
+          {published ? "Published" : "Pending"}
+        </span>
+      </div>
       <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: 1, minHeight: 28 }}>
-        {published ? result.resultValue : "--"}
+        {value ?? "--"}
       </div>
       {!published && (
         <div style={{ fontSize: 11, opacity: 0.85 }}>

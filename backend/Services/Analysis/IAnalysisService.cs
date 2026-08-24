@@ -9,4 +9,5 @@ public interface IAnalysisService
     Task<PatternStats> GetPatternStatsAsync(string? drawTime, int digitLength, DateOnly? from, DateOnly? to, CancellationToken ct = default);
     Task<AnalysisOverview> GetOverviewAsync(string? drawTime, CancellationToken ct = default);
     Task<DigitAnalysis> GetDigitAnalysisAsync(string? drawTime, DateOnly? from, DateOnly? to, int recentWindow, CancellationToken ct = default);
+    Task<SeasonalPattern> GetSeasonalPatternAsync(DateOnly targetDate, int digitLength, int topN, CancellationToken ct = default);
 }

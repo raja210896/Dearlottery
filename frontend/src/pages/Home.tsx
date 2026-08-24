@@ -1,9 +1,8 @@
-import { useState } from "react";
 import { useApi } from "../hooks/useApi";
 import { resultsApi } from "../api/results";
 import { analysisApi } from "../api/analysis";
-import { predictionsApi } from "../api/predictions";
-import type { PredictionHistoryDto } from "../api/types";
+import type { ResultDto } from "../api/types";
+import { DRAW_TIMES } from "../api/types";
 import ResultCard from "../components/ResultCard";
 import StatCard, { ChipRow } from "../components/StatCard";
 import { LoadingSkeleton, ErrorState, EmptyState } from "../components/StateViews";
@@ -11,11 +10,11 @@ import { FlameIcon, SnowflakeIcon, AnalysisIcon, HistoryIcon, CalendarIcon } fro
 import { Link } from "react-router-dom";
 
 export default function Home() {
-  const today = useApi(() => resultsApi.today(), []);
   const overview = useApi(() => analysisApi.overview(), []);
-  // Fetch enough recent results to reliably cover all three draw times for the "latest available" fallback.
+  // Fetch enough recent results to reliably cover all three draw times for the latest available date.
   const recent = useApi(() => resultsApi.list({ page: 1, pageSize: 15 }), []);
-  const latestPrediction = useApi(() => predictionsApi.history({ page: 1, pageSize: 1 }), []);
+  const seasonal = useApi(() => analysisApi.seasonal(), []);
+  const dataQuality = useApi(() => analysisApi.dataQuality(), []);
 
   const latestByDrawTime = new Map<string, { value: string; date: string }>();
   for (const r of recent.data?.items ?? []) {
@@ -24,8 +23,20 @@ export default function Home() {
     }
   }
 
-  // Derive the "Updated" timestamp from real data — the most recent lastUpdated among today's draws.
-  const latestUpdatedIso = (today.data ?? [])
+  // "Latest Available Results" = the most recent date that actually has data in the DB
+  // (not necessarily today's calendar date), with that date's own draw-time statuses.
+  const latestDate = recent.data?.items[0]?.drawDate ?? null;
+  const latestDateByDrawTime = new Map(
+    (recent.data?.items ?? []).filter((r) => r.drawDate === latestDate).map((r) => [r.drawTime, r])
+  );
+  const latestCards: ResultDto[] = latestDate
+    ? DRAW_TIMES.map(
+        (dt) => latestDateByDrawTime.get(dt) ?? { id: 0, drawDate: latestDate, drawTime: dt, resultValue: null, status: "Pending", lastUpdated: null }
+      )
+    : [];
+
+  // Derive the "Updated" timestamp from real data — the most recent lastUpdated among that date's draws.
+  const latestUpdatedIso = latestCards
     .map((r) => r.lastUpdated)
     .filter((v): v is string => !!v)
     .sort()
@@ -34,12 +45,21 @@ export default function Home() {
     ? new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(latestUpdatedIso))
     : "—";
 
+  // Which draw time is "active" right now, by real clock time — only meaningful (and only shown)
+  // when the cards on screen are actually today's, not an older fallback date.
+  const now = new Date();
+  const todayLocalIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const hour = now.getHours();
+  const activeDrawTime = hour < 13 ? "1 PM" : hour < 18 ? "6 PM" : hour < 20 ? "8 PM" : null;
+  const showActiveHighlight = latestDate === todayLocalIso;
+
   return (
     <div className="container">
       <h2 className="section-title" style={{ marginTop: 4 }}>Latest Available Results</h2>
-      {today.loading && <LoadingSkeleton rows={3} height={120} />}
-      {today.error && <ErrorState message={today.error} onRetry={today.reload} />}
-      {today.data && (
+      {recent.loading && <LoadingSkeleton rows={3} height={120} />}
+      {recent.error && <ErrorState message={recent.error} onRetry={recent.reload} />}
+      {recent.data && latestCards.length === 0 && <EmptyState message="No results yet." />}
+      {latestCards.length > 0 && (
         <div
           style={{
             background: "var(--gradient-accent)",
@@ -50,22 +70,33 @@ export default function Home() {
         >
           <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#fff", fontSize: 13, fontWeight: 600, marginBottom: 10, padding: "0 2px" }}>
             <CalendarIcon size={16} />
-            <span>Updated: {updatedLabel}</span>
+            <span>Updated: {updatedLabel} · {latestDate}</span>
           </div>
           <div className="grid-3" style={{ overflowX: "auto" }}>
-            {today.data.map((r) => (
-              <ResultCard key={r.drawTime} result={r} lastAvailable={latestByDrawTime.get(r.drawTime)} />
+            {latestCards.map((r) => (
+              <ResultCard
+                key={r.drawTime}
+                result={r}
+                lastAvailable={latestByDrawTime.get(r.drawTime)}
+                active={showActiveHighlight && r.drawTime === activeDrawTime}
+              />
             ))}
           </div>
         </div>
       )}
 
-      <h2 className="section-title">Latest Prediction</h2>
-      {latestPrediction.loading && <LoadingSkeleton rows={1} height={140} />}
-      {latestPrediction.error && <ErrorState message={latestPrediction.error} onRetry={latestPrediction.reload} />}
-      {latestPrediction.data && latestPrediction.data.items.length === 0 && <EmptyState message="No predictions saved yet." />}
-      {latestPrediction.data && latestPrediction.data.items.length > 0 && (
-        <LatestPredictionCard prediction={latestPrediction.data.items[0]} />
+      {dataQuality.data && (
+        <div className="grid-4">
+          <SummaryStat label="Historical Draws" value={dataQuality.data.totalDraws + dataQuality.data.missingSlotCount} />
+          <SummaryStat label="Available" value={dataQuality.data.totalDraws} />
+          <SummaryStat label="Missing" value={dataQuality.data.missingSlotCount} />
+          <SummaryStat
+            label="Coverage"
+            value={`${dataQuality.data.totalDraws + dataQuality.data.missingSlotCount > 0
+              ? ((dataQuality.data.totalDraws / (dataQuality.data.totalDraws + dataQuality.data.missingSlotCount)) * 100).toFixed(0)
+              : 0}%`}
+          />
+        </div>
       )}
 
       <h2 className="section-title">Quick Analysis</h2>
@@ -91,8 +122,21 @@ export default function Home() {
           <StatCard title="Digit Frequency" icon={<AnalysisIcon size={14} />} to="/analysis?tab=frequency">
             <ChipRow values={overview.data.frequency.lastDigitFrequency.slice(0, 6).map((f) => f.value)} />
           </StatCard>
-          <StatCard title="Model Evaluation" icon={<HistoryIcon size={14} />} to="/analysis?tab=modelComparison">
-            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Current model vs frequency, recency &amp; random baselines →</span>
+          <StatCard title="Last Year, This Date" icon={<CalendarIcon size={14} />}>
+            {seasonal.loading && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Loading…</span>}
+            {seasonal.error && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Unable to load.</span>}
+            {seasonal.data && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {seasonal.data.draws.map((d) => (
+                  <div key={d.drawTime} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
+                    <span style={{ color: "var(--text-muted)" }}>{d.drawTime}</span>
+                    <span style={{ fontWeight: 700, letterSpacing: d.sameDateLastYearValue ? 1 : 0 }}>
+                      {d.sameDateLastYearValue ?? <span style={{ fontSize: 11, fontWeight: 500, color: "var(--text-muted)" }}>No result found</span>}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </StatCard>
         </div>
       )}
@@ -129,64 +173,11 @@ export default function Home() {
   );
 }
 
-function LatestPredictionCard({ prediction: p }: { prediction: PredictionHistoryDto }) {
-  const [expanded, setExpanded] = useState(false);
-  const top = p.candidates.slice(0, 10);
-  const best = top[0];
-
+function SummaryStat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="card" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>{p.drawDate} · {p.drawTime}</span>
-        <span className={`badge ${p.isEvaluated ? "badge-success" : "badge-warning"}`}>{p.isEvaluated ? "Evaluated" : "Pending"}</span>
-      </div>
-
-      {best && (
-        <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-          Top candidate: <b style={{ color: "var(--text)" }}>{best.value}</b> · Model Score <b style={{ color: "var(--text)" }}>{best.modelScore}</b>
-          {" · "}Historical Frequency <b style={{ color: "var(--text)" }}>{best.historicalFrequency}</b> · Recent Frequency <b style={{ color: "var(--text)" }}>{best.recentFrequency}</b>
-          <div style={{ marginTop: 2 }}>{best.reason}</div>
-        </div>
-      )}
-
-      {p.isEvaluated && (
-        <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-          Actual result: <b style={{ color: "var(--text)" }}>{p.actualResult}</b>
-          <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
-            <span className={`badge ${p.exactMatch ? "badge-success" : "badge-muted"}`}>Exact: {p.exactMatch === null ? "N/A" : p.exactMatch ? "Match" : "No match"}</span>
-            <span className={`badge ${p.last3Match ? "badge-success" : "badge-muted"}`}>Last-3: {p.last3Match === null ? "N/A" : p.last3Match ? "Match" : "No match"}</span>
-            <span className={`badge ${p.last2Match ? "badge-success" : "badge-muted"}`}>Last-2: {p.last2Match === null ? "N/A" : p.last2Match ? "Match" : "No match"}</span>
-          </div>
-        </div>
-      )}
-
-      {top.length > 0 && (
-        <button
-          className="btn btn-outline"
-          style={{ padding: "4px 10px", minHeight: 26, fontSize: 11, alignSelf: "flex-start" }}
-          onClick={() => setExpanded(!expanded)}
-        >
-          {expanded ? "Hide candidates" : `Show all ${top.length} candidates`}
-        </button>
-      )}
-      {expanded && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {top.map((c) => (
-            <div key={c.value} style={{ padding: "6px 8px", background: "var(--bg)", borderRadius: 8 }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontWeight: 700 }}>{c.value}</span>
-                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Model Score <b style={{ color: "var(--text)" }}>{c.modelScore}</b></span>
-              </div>
-              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                Historical Frequency <b style={{ color: "var(--text)" }}>{c.historicalFrequency}</b> · Recent Frequency <b style={{ color: "var(--text)" }}>{c.recentFrequency}</b>
-              </div>
-              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{c.reason}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <Link to="/analysis/history" style={{ fontSize: 12, color: "var(--primary)", fontWeight: 600 }}>View Prediction History →</Link>
+    <div className="card" style={{ padding: 12, textAlign: "center" }}>
+      <div style={{ fontSize: 18, fontWeight: 800, color: "var(--primary)" }}>{value}</div>
+      <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, marginTop: 2 }}>{label}</div>
     </div>
   );
 }
